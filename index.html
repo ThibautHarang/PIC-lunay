@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme d'Intelligence Lunotière — Démo Personnalisée</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f5f7fa; color: #333; height: 100vh; overflow: hidden; }
+
+        .banner {
+            background: linear-gradient(135deg, #1B2A4A 0%, #0F1B33 100%);
+            color: white; padding: 10px 20px; text-align: center;
+            font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .banner span { opacity: 0.8; font-weight: 400; }
+
+        .container { display: flex; height: calc(100vh - 38px); }
+
+        /* LEFT: CHAT */
+        .chat-panel {
+            flex: 0 0 58%; display: flex; flex-direction: column;
+            background: white; border-right: 1px solid #e0e0e0;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #1B2A4A 0%, #2C3E50 100%);
+            color: white; padding: 16px 24px; display: flex;
+            align-items: center; gap: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .chat-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: linear-gradient(135deg, #FF6B6B, #F4A261);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: white; font-weight: 700;
+        }
+        .chat-header-info h2 {
+            font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 700;
+        }
+        .chat-header-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+        .online-dot {
+            width: 10px; height: 10px; background: #2EC4B6; border-radius: 50%;
+            animation: pulse 2s infinite; margin-left: auto;
+        }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 20px; display: flex;
+            flex-direction: column; gap: 14px; background: #fafafa;
+        }
+        .msg { padding: 12px 16px; border-radius: 16px; max-width: 82%; font-size: 14px; line-height: 1.6; animation: slideIn 0.3s ease; }
+        .msg.bot {
+            background: white; border: 1px solid #e8e8e8; align-self: flex-start;
+            border-bottom-left-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .msg.user {
+            background: linear-gradient(135deg, #FF6B6B, #F4A261); color: white;
+            align-self: flex-end; border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(255,107,107,0.25);
+        }
+        .msg.bot .source { display: inline-block; margin-top: 8px; font-size: 11px; color: #999; background: #f5f5f5; padding: 2px 8px; border-radius: 8px; }
+        @keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        .typing { display: flex; gap: 4px; padding: 12px 16px; align-self: flex-start; }
+        .typing span {
+            width: 8px; height: 8px; background: #ccc; border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+        .suggestions {
+            display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px;
+            border-top: 1px solid #eee; background: white;
+        }
+        .suggestion-btn {
+            padding: 8px 16px; border-radius: 20px; border: 1.5px solid #FF6B6B;
+            background: white; color: #FF6B6B; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .suggestion-btn:hover { background: #FF6B6B; color: white; }
+
+        .chat-input {
+            display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #eee;
+            background: white;
+        }
+        .chat-input input {
+            flex: 1; padding: 12px 16px; border: 1.5px solid #ddd; border-radius: 24px;
+            font-size: 14px; outline: none; transition: border-color 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .chat-input input:focus { border-color: #FF6B6B; }
+        .chat-input button {
+            padding: 12px 24px; background: linear-gradient(135deg, #FF6B6B, #F4A261);
+            color: white; border: none; border-radius: 24px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-size: 14px;
+        }
+        .chat-input button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,107,107,0.3); }
+
+        /* RIGHT: DASHBOARD */
+        .dashboard-panel {
+            flex: 1; display: flex; flex-direction: column; overflow-y: auto;
+            background: #f8f9fa;
+        }
+        .dash-header {
+            background: linear-gradient(135deg, #1B2A4A, #2C3E50);
+            color: white; padding: 16px 20px;
+        }
+        .dash-header h2 { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; }
+        .dash-header p { font-size: 11px; opacity: 0.7; margin-top: 4px; }
+
+        .dash-content { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+        .dash-card {
+            background: white; border-radius: 12px; padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee;
+        }
+        .dash-card h3 {
+            font-size: 12px; font-weight: 700; color: #1B2A4A;
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .kpi {
+            background: linear-gradient(135deg, #fff5f5, #fff0eb);
+            border-radius: 10px; padding: 12px; text-align: center;
+            border: 1px solid rgba(255,107,107,0.1);
+        }
+        .kpi-value {
+            font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 800;
+            color: #FF6B6B;
+        }
+        .kpi-label { font-size: 10px; color: #888; margin-top: 4px; font-weight: 500; }
+
+        .cat-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .cat-bar .label { font-size: 11px; width: 100px; color: #555; font-weight: 500; }
+        .cat-bar .bar-bg {
+            flex: 1; height: 20px; background: #fef0ec; border-radius: 10px; overflow: hidden;
+        }
+        .cat-bar .bar-fill {
+            height: 100%; border-radius: 10px;
+            background: linear-gradient(90deg, #FF6B6B, #F4A261);
+            transition: width 1s ease;
+        }
+        .cat-bar .pct { font-size: 11px; color: #FF6B6B; font-weight: 700; width: 35px; text-align: right; }
+
+        .satisfaction-circle {
+            width: 100px; height: 100px; border-radius: 50%; margin: 0 auto;
+            background: conic-gradient(#2EC4B6 0% 92%, #eee 92% 100%);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .satisfaction-circle::after {
+            content: '92%'; position: absolute; font-family: 'Poppins', sans-serif;
+            font-size: 22px; font-weight: 800; color: #2EC4B6;
+            background: white; width: 76px; height: 76px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .satisfaction-label { text-align: center; font-size: 11px; color: #888; margin-top: 8px; }
+
+        .recent-list { display: flex; flex-direction: column; gap: 6px; }
+        .recent-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 10px; background: #fafafa; border-radius: 8px;
+            font-size: 11px; border: 1px solid #f0f0f0;
+        }
+        .recent-item .q { color: #333; flex: 1; }
+        .recent-item .time { color: #aaa; font-size: 10px; white-space: nowrap; margin-left: 8px; }
+        .recent-item .badge {
+            font-size: 9px; padding: 2px 8px; border-radius: 8px;
+            font-weight: 600; margin-left: 8px; white-space: nowrap;
+        }
+        .badge-green { background: #e0f7f5; color: #2EC4B6; }
+        .badge-orange { background: #fff3e0; color: #e65100; }
+        .badge-blue { background: #e3f2fd; color: #1565c0; }
+
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .chat-panel { flex: 1; }
+            .dashboard-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        PLATEFORME D'INTELLIGENCE LUNOTIÈRE × COMMUNE DE LUNAY (41360) — <span>Démonstration personnalisée pour Mme le Maire Colette Moalic</span>
+    </div>
+
+    <div class="container">
+        <!-- CHAT PANEL -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-avatar">L</div>
+                <div class="chat-header-info">
+                    <h2>Plateforme d'Intelligence Lunotière</h2>
+                    <p>Votre mairie disponible 24h/24 — 1 253 habitants connectés</p>
+                </div>
+                <div class="online-dot"></div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+            </div>
+
+            <div class="suggestions" id="suggestions">
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Posez votre question sur Lunay..." onkeypress="if(event.key==='Enter')sendMessage()">
+                <button onclick="sendMessage()">Envoyer</button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD PANEL -->
+        <div class="dashboard-panel">
+            <div class="dash-header">
+                <h2>Tableau de Bord — Lunay</h2>
+                <p>Vision temps réel des besoins citoyens • Mise à jour en continu</p>
+            </div>
+            <div class="dash-content">
+                <div class="dash-card">
+                    <h3>Indicateurs clés</h3>
+                    <div class="kpi-grid">
+                        <div class="kpi"><div class="kpi-value">847</div><div class="kpi-label">Questions ce mois</div></div>
+                        <div class="kpi"><div class="kpi-value">2.1s</div><div class="kpi-label">Temps de réponse</div></div>
+                        <div class="kpi"><div class="kpi-value">24/7</div><div class="kpi-label">Disponibilité</div></div>
+                        <div class="kpi"><div class="kpi-value">-62%</div><div class="kpi-label">Appels mairie</div></div>
+                    </div>
+                </div>
+
+                <div class="dash-card">
+                    <h3>Thématiques les plus demandées</h3>
+                    <div id="categoryBars"></div>
+                </div>
+
+                <div class="dash-card" style="display:flex; gap:20px; align-items:center;">
+                    <div style="flex:1;">
+                        <h3>Satisfaction citoyens</h3>
+                        <div class="satisfaction-circle"></div>
+                        <div class="satisfaction-label">Score moyen sur 30 jours</div>
+                    </div>
+                    <div style="flex:1;">
+                        <h3>Pic d'activité</h3>
+                        <div style="font-size:12px; color:#555; line-height:1.8;">
+                            <div>Lundi 14h-16h <strong style="color:#2EC4B6">+45%</strong></div>
+                            <div>Mercredi matin <strong style="color:#2EC4B6">+38%</strong></div>
+                            <div>Vendredi 10h <strong style="color:#e65100">+27%</strong></div>
+                            <div style="margin-top:8px; font-size:10px; color:#aaa;">= Heures creuses de la mairie</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-card">
+                    <h3>Dernières questions (temps réel)</h3>
+                    <div class="recent-list">
+                        <div class="recent-item">
+                            <span class="q">Horaires de la déchèterie ?</span>
+                            <span class="badge badge-green">Résolu</span>
+                            <span class="time">il y a 3 min</span>
+                        </div>
+                        <div class="recent-item">
+                            <span class="q">Inscription cantine école ?</span>
+                            <span class="badge badge-green">Résolu</span>
+                            <span class="time">il y a 8 min</span>
+                        </div>
+                        <div class="recent-item">
+                            <span class="q">Peut-on construire en zone A ?</span>
+                            <span class="badge badge-orange">Redirigé</span>
+                            <span class="time">il y a 15 min</span>
+                        </div>
+                        <div class="recent-item">
+                            <span class="q">Fête tarte aux prunes 2026 ?</span>
+                            <span class="badge badge-blue">Info</span>
+                            <span class="time">il y a 22 min</span>
+                        </div>
+                        <div class="recent-item">
+                            <span class="q">Jour de collecte des poubelles ?</span>
+                            <span class="badge badge-green">Résolu</span>
+                            <span class="time">il y a 31 min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-card" style="background: linear-gradient(135deg, #1B2A4A, #2C3E50); color: white; border:none;">
+                    <h3 style="color: rgba(255,255,255,0.7);">Alerte Tendance</h3>
+                    <p style="font-size: 13px; line-height: 1.7;">
+                        <strong style="color: #2EC4B6;">+340%</strong> de questions sur les <strong>déchets et collecte</strong> cette semaine.
+                        <br><span style="opacity: 0.7; font-size: 12px;">Suggestion : communiquer sur le calendrier ValDem et l'appli mobile "Mes Déchets".</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ============================================
+// KNOWLEDGE BASE — LUNAY (41360)
+// ============================================
+const knowledgeBase = [
+    // === MAIRIE & ADMINISTRATION ===
+    {
+        category: 'mairie',
+        keywords: ['mairie', 'horaire', 'ouverture', 'adresse', 'contact', 'téléphone', 'email', 'accueil'],
+        response: `<strong>Mairie de Lunay</strong><br>
+        <strong>Adresse :</strong> 7, Place de l'Église — 41360 Lunay<br>
+        <strong>Téléphone :</strong> 02 54 72 04 79<br>
+        <strong>Email :</strong> mairie@lunay.com<br><br>
+        <strong>Horaires d'ouverture :</strong><br>
+        • Lundi : 14h00 — 19h00<br>
+        • Mardi : 10h00 — 12h00 / 14h00 — 16h30<br>
+        • Jeudi et vendredi : 10h00 — 12h00 / 14h00 — 16h30<br>
+        <em>Mercredi et week-end : fermé</em>`,
+        source: 'Site officiel lunay.com'
+    },
+    {
+        category: 'mairie',
+        keywords: ['maire', 'élu', 'conseil municipal', 'adjoint', 'équipe municipale'],
+        response: `<strong>La Maire : Colette MOALIC</strong><br>
+        Élue maire de Lunay suite aux dernières élections municipales de 2026.<br><br>
+        <strong>Les Adjoints :</strong><br>
+        • 1er adjoint : Gérard PLESSIS<br>
+        • 2ème adjoint : Dominique BEAUVALLET<br>
+        • 3ème adjointe : Luisa GUILLAUME<br><br>
+        Le conseil municipal est composé de <strong>15 élus</strong>.`,
+        source: 'Site officiel lunay.com — Élections municipales 2026'
+    },
+    {
+        category: 'mairie',
+        keywords: ['délibération', 'décision', 'conseil', 'compte-rendu', 'vote'],
+        response: `Les comptes-rendus des conseils municipaux sont consultables :<br>
+        • Sur le site <strong>lunay.com</strong> (rubrique La Mairie > Conseil Municipal)<br>
+        • En mairie aux horaires d'ouverture<br><br>
+        <strong>Dernières décisions notables :</strong><br>
+        • Acquisition d'équipements informatiques (mai 2024)<br>
+        • Création d'un poste d'ATSEM principale 2ème classe (août 2024)<br>
+        • Création d'un poste d'adjoint technique 2ème classe`,
+        source: 'Délibérations du 26 juin 2024'
+    },
+
+    // === ÉTAT CIVIL ===
+    {
+        category: 'etat-civil',
+        keywords: ['carte', 'identité', 'cni', 'pièce d\'identité'],
+        response: `<strong>Carte Nationale d'Identité</strong><br>
+        <strong>Gratuite</strong> — Validité : 15 ans (adultes), 10 ans (mineurs)<br><br>
+        <strong>Démarches :</strong><br>
+        1. Pré-demande en ligne sur <strong>ants.gouv.fr</strong><br>
+        2. Prendre rendez-vous en mairie de Lunay<br>
+        3. Se présenter avec les pièces justificatives et le numéro de pré-demande<br>
+        4. Délai : environ <strong>2 à 3 semaines</strong><br><br>
+        <strong>Pièces à fournir :</strong> photo d'identité, justificatif de domicile, acte de naissance.`,
+        source: 'Service état civil — Mairie de Lunay'
+    },
+    {
+        category: 'etat-civil',
+        keywords: ['passeport', 'voyage', 'biométrique'],
+        response: `<strong>Passeport biométrique</strong><br>
+        <strong>Tarif :</strong> 86€ (adulte), 42€ (mineur 15-18 ans), 17€ (mineur < 15 ans)<br>
+        <strong>Validité :</strong> 10 ans (adultes), 5 ans (mineurs)<br><br>
+        <strong>Démarches :</strong><br>
+        1. Pré-demande sur <strong>ants.gouv.fr</strong><br>
+        2. Rendez-vous en mairie de Lunay avec pièces justificatives<br>
+        3. Délai : environ <strong>2 à 4 semaines</strong><br><br>
+        Pensez à anticiper, surtout avant les vacances d'été !`,
+        source: 'Service état civil — Mairie de Lunay'
+    },
+    {
+        category: 'etat-civil',
+        keywords: ['naissance', 'décès', 'mariage', 'acte', 'certificat', 'état civil', 'etat civil'],
+        response: `<strong>Service État Civil de Lunay</strong><br>
+        Pour toute demande d'acte (naissance, mariage, décès) :<br>
+        • En mairie aux horaires d'ouverture<br>
+        • Par courrier à : Mairie de Lunay, 7 Place de l'Église, 41360 Lunay<br>
+        • Par email : mairie@lunay.com<br><br>
+        <strong>Pièce à fournir :</strong> justificatif d'identité et lien avec la personne concernée.`,
+        source: 'Service état civil'
+    },
+
+    // === DÉCHETS & ENVIRONNEMENT ===
+    {
+        category: 'dechets',
+        keywords: ['déchet', 'poubelle', 'ordure', 'collecte', 'ramassage', 'tri', 'recyclage', 'bac', 'jaune', 'bordeaux'],
+        response: `<strong>Collecte des déchets — ValDem</strong><br>
+        La collecte à Lunay se fait le <strong>mercredi</strong>, en alternance :<br><br>
+        • <strong>Semaine A</strong> (bac bordeaux) : ordures ménagères<br>
+        • <strong>Semaine B</strong> (bac jaune) : recyclables<br><br>
+        <strong>Conseils :</strong><br>
+        • Sortez vos bacs <strong>la veille au soir</strong><br>
+        • Consultez le calendrier précis sur <strong>valdem.fr</strong> ou l'appli <strong>"Mes déchets ValDem"</strong><br><br>
+        Pour connaître votre semaine (A ou B), entrez votre adresse sur le site ValDem ou dans l'appli mobile.`,
+        source: 'ValDem — Syndicat de collecte du Vendômois'
+    },
+    {
+        category: 'dechets',
+        keywords: ['déchèterie', 'déchetterie', 'encombrant', 'gros déchet', 'meuble', 'électroménager'],
+        response: `<strong>Déchèteries les plus proches de Lunay :</strong><br><br>
+        <strong>1. Déchèterie de Montoire-sur-le-Loir</strong><br>
+        📍 La Varenne, Fontaine-les-Coteaux (41800) — ~5 km<br>
+        📞 02 54 86 60 20 — Ouverte jusqu'à 19h<br><br>
+        <strong>2. Déchèterie de Savigny-sur-Braye</strong><br>
+        📍 Route de Vendôme (41360) — ~10 km<br>
+        📞 02 54 23 73 34<br><br>
+        <strong>3. Déchèterie de Naveil</strong><br>
+        📍 ZA de la Bouchardière, 41100 Naveil — ~9 km<br>
+        📞 02 54 73 25 39<br><br>
+        Pensez à vous munir d'un justificatif de domicile.`,
+        source: 'ValDem'
+    },
+
+    // === ÉCOLE & ENFANCE ===
+    {
+        category: 'ecole',
+        keywords: ['école', 'ecole', 'primaire', 'maternelle', 'inscription', 'scolaire', 'rentrée'],
+        response: `<strong>École primaire de Lunay</strong><br>
+        📍 20, Rue du Progrès — 41360 Lunay<br>
+        📞 02 54 72 12 77<br><br>
+        <strong>Effectifs :</strong> 59 élèves élémentaires + 28 maternelles = <strong>87 élèves</strong> répartis en 4 classes<br><br>
+        <strong>Inscription :</strong><br>
+        Pour inscrire votre enfant, rendez-vous en <strong>mairie de Lunay</strong> avec :<br>
+        • Livret de famille<br>
+        • Justificatif de domicile<br>
+        • Carnet de santé (vaccinations)<br><br>
+        Les inscriptions pour la rentrée de septembre sont ouvertes chaque année à partir du printemps.`,
+        source: 'Ministère de l\'Éducation nationale / lunay.com'
+    },
+    {
+        category: 'ecole',
+        keywords: ['cantine', 'repas', 'restaurant scolaire', 'périscolaire', 'garderie', 'après école'],
+        response: `<strong>Cantine et périscolaire</strong><br>
+        L'école primaire de Lunay dispose d'un <strong>service de cantine</strong> avec des repas équilibrés préparés chaque jour.<br><br>
+        Le <strong>service périscolaire</strong> (garderie avant et après l'école) est également disponible.<br><br>
+        <strong>Inscription :</strong> les modalités et tarifs pour la cantine et le périscolaire sont communiqués par la mairie en début d'année scolaire. Contactez la mairie au <strong>02 54 72 04 79</strong> pour plus de détails.<br><br>
+        Les conditions pour 2025-2026 sont consultables sur <strong>lunay.com</strong> (rubrique Enfance).`,
+        source: 'lunay.com — Rubrique Enfance'
+    },
+
+    // === EAU & ASSAINISSEMENT ===
+    {
+        category: 'eau',
+        keywords: ['eau', 'assainissement', 'facture eau', 'fuite', 'compteur', 'coupure'],
+        response: `<strong>Service des eaux — Lunay</strong><br>
+        L'eau potable à Lunay est gérée par la <strong>SAUR</strong> pour le compte de la Communauté d'agglomération <strong>Territoires Vendômois</strong>.<br><br>
+        <strong>Contact SAUR :</strong><br>
+        • Urgence fuite / coupure : <strong>09 77 40 11 41</strong> (24h/24)<br>
+        • Service client : <strong>saur.com</strong><br><br>
+        <strong>Assainissement collectif :</strong> géré par la CATV (Communauté d'Agglomération Territoires Vendômois) depuis le 1er janvier 2020.`,
+        source: 'Territoires Vendômois / SAUR'
+    },
+
+    // === PATRIMOINE & HISTOIRE ===
+    {
+        category: 'patrimoine',
+        keywords: ['histoire', 'patrimoine', 'église', 'saint-martin', 'monument', 'historique', 'ancien'],
+        response: `<strong>L'Église Saint-Martin de Lunay</strong><br>
+        Monument inscrit aux Monuments Historiques depuis le <strong>10 novembre 1925</strong>.<br><br>
+        • Construite au <strong>XIIe siècle</strong>, agrandie aux XVe-XVIe siècles<br>
+        • Le clocher (partie la plus ancienne) date du XIIe siècle<br>
+        • Portail occidental richement orné<br>
+        • <strong>Peintures murales du XIVe siècle</strong> dans la sacristie<br>
+        • Voûte du chœur peinte représentant la Cène — où le diable est caché derrière un rideau !<br><br>
+        L'église appartenait autrefois à l'<strong>Abbaye d'Évron</strong> dans le Maine.`,
+        source: 'Inventaire des Monuments Historiques / Wikipedia'
+    },
+    {
+        category: 'patrimoine',
+        keywords: ['lunay', 'commune', 'village', 'population', 'habitants', 'lunotier', 'géographie', 'superficie'],
+        response: `<strong>Lunay en chiffres</strong><br>
+        • <strong>Population :</strong> 1 253 habitants (les <em>Lunotiers</em> et <em>Lunotières</em>)<br>
+        • <strong>Superficie :</strong> 38,6 km²<br>
+        • <strong>Code postal :</strong> 41360<br>
+        • <strong>Département :</strong> Loir-et-Cher (41)<br>
+        • <strong>Région :</strong> Centre-Val de Loire<br>
+        • <strong>Intercommunalité :</strong> Communauté d'agglomération Territoires Vendômois<br>
+        • <strong>Situation :</strong> 15 km à l'ouest de Vendôme, 180 km au sud-ouest de Paris<br>
+        • <strong>Région agricole :</strong> Perche<br><br>
+        La commune est devenue officiellement "commune de Lunay" par décret de la Convention Nationale le <strong>31 octobre 1793</strong>.`,
+        source: 'Wikipedia / INSEE'
+    },
+
+    // === FÊTES & CULTURE ===
+    {
+        category: 'culture',
+        keywords: ['tarte', 'prune', 'fête', 'festival', 'événement', 'animation', 'brocante', 'marché'],
+        response: `<strong>La Fête de la Tarte aux Prunes</strong> 🥧<br>
+        <strong>L'événement phare de Lunay !</strong> Organisé depuis <strong>39 ans</strong>, chaque dernier week-end d'août.<br><br>
+        <strong>Au programme :</strong><br>
+        • Grande <strong>brocante</strong> (vendeurs particuliers et professionnels)<br>
+        • <strong>Village d'artisans</strong> et producteurs locaux<br>
+        • <strong>Mini-ferme</strong> avec animaux<br>
+        • Activités enfants gratuites (poneys, structures gonflables)<br>
+        • Animations sportives (handball, etc.)<br>
+        • Et bien sûr… la dégustation de <strong>tarte aux prunes</strong> artisanale !<br><br>
+        Organisé par l'association <strong>"Lunay en Fêtes"</strong>.`,
+        source: 'lunay.com / Lunay en Fêtes'
+    },
+    {
+        category: 'culture',
+        keywords: ['association', 'sport', 'loisir', 'tennis', 'handball', 'randonnée', 'club'],
+        response: `<strong>Vie associative à Lunay</strong><br><br>
+        <strong>Associations principales :</strong><br>
+        • <strong>Lunay en Fêtes</strong> — Organisation d'événements (fête de la tarte aux prunes, randonnées en janvier et avril)<br>
+        • <strong>Tennis Club de Lunay</strong> — Cours et compétitions, organisateur du Raid Bernache<br>
+        • <strong>Section handball</strong> — Animations lors des événements communaux<br><br>
+        Pour rejoindre une association ou en créer une, contactez la mairie ou consultez l'annuaire sur <strong>lunay.com</strong>.`,
+        source: 'lunay.com — Annuaires'
+    },
+
+    // === URBANISME — DÉTAILLÉ ===
+    {
+        category: 'urbanisme',
+        keywords: ['plu', 'urbanisme', 'construire', 'construction', 'permis', 'terrain', 'zone', 'cadastre', 'travaux', 'PLUi'],
+        response: `<strong>Urbanisme à Lunay</strong><br>
+        Lunay est intégrée au <strong>PLUi-H de Territoires Vendômois</strong> (en cours de finalisation). En attendant son approbation définitive, les règles applicables relèvent du <strong>Règlement National d'Urbanisme (RNU)</strong> et de la carte communale.<br><br>
+        <strong>Zones principales :</strong><br>
+        • <strong>Zone U</strong> (Urbaine) : centre-bourg, constructible sous conditions<br>
+        • <strong>Zone AU</strong> (À Urbaniser) : secteurs ouverts à l'urbanisation future<br>
+        • <strong>Zone A</strong> (Agricole) : construction très limitée, liée à l'exploitation<br>
+        • <strong>Zone N</strong> (Naturelle) : protection des espaces naturels<br><br>
+        <strong>Consultation :</strong><br>
+        • En mairie (lundi soir 18h-19h avec M. Beauvallet, ou sur RDV)<br>
+        • Géoportail de l'Urbanisme : <strong>geoportail-urbanisme.gouv.fr</strong><br>
+        • Portail numérique GNAU pour déposer vos dossiers en ligne`,
+        source: 'Mairie de Lunay — Service urbanisme / Territoires Vendômois'
+    },
+    {
+        category: 'urbanisme',
+        keywords: ['clôture', 'cloture', 'mur', 'grillage', 'séparation', 'limite', 'propriété', 'voisin', 'mitoyen'],
+        response: `<strong>Règles applicables aux clôtures — Lunay</strong><br><br>
+        <strong>En zone urbaine (U) :</strong><br>
+        • Hauteur maximale des clôtures en limite séparative : <strong>1,80 m</strong><br>
+        • Hauteur maximale en bordure de voie publique : <strong>1,60 m</strong> (partie pleine) ou <strong>1,80 m</strong> si grillage ajouré<br>
+        • Les murs pleins en bordure de rue sont limités à <strong>1,20 m</strong> avec possibilité de grillage ou barreaudage au-dessus<br><br>
+        <strong>Matériaux recommandés :</strong><br>
+        • Pierre locale, enduit ton pierre, grillage rigide vert<br>
+        • <strong>Interdit :</strong> plaques béton apparentes, tôles, matériaux de récupération<br><br>
+        <strong>Déclaration préalable obligatoire</strong> pour toute clôture nouvelle.<br>
+        Formulaire Cerfa n°13703*03 à déposer en mairie ou via le <strong>portail GNAU</strong>.`,
+        source: 'RNU Art. R.111-21 / Règles communales — Service urbanisme Lunay'
+    },
+    {
+        category: 'urbanisme',
+        keywords: ['hauteur', 'étage', 'immeuble', 'bâtiment', 'maximum', 'gabarit', 'faîtage', 'égout', 'toiture'],
+        response: `<strong>Hauteur maximale des constructions — Lunay</strong><br><br>
+        <strong>En zone urbaine (U) — centre-bourg :</strong><br>
+        • Hauteur à l'égout du toit : <strong>7 mètres maximum</strong> (R+1+combles)<br>
+        • Hauteur au faîtage : <strong>10 mètres maximum</strong><br>
+        • Soit environ <strong>2 étages + combles</strong><br><br>
+        <strong>En zone AU (à urbaniser) :</strong><br>
+        • Hauteur à l'égout : <strong>6 mètres</strong><br>
+        • Hauteur au faîtage : <strong>9 mètres</strong><br><br>
+        <strong>Annexes</strong> (garages, abris de jardin) :<br>
+        • Hauteur maximale : <strong>3,50 m</strong> au faîtage<br>
+        • Emprise au sol : <strong>50 m² maximum</strong><br><br>
+        Ces hauteurs sont mesurées à partir du <strong>terrain naturel</strong>.`,
+        source: 'RNU / Règles d\'urbanisme applicables — Lunay'
+    },
+    {
+        category: 'urbanisme',
+        keywords: ['permis', 'construire', 'déclaration', 'préalable', 'autorisation', 'dossier', 'cerfa', 'délai'],
+        response: `<strong>Autorisations d'urbanisme à Lunay</strong><br><br>
+        <strong>Permis de construire</strong> (obligatoire si surface > 20 m²) :<br>
+        • Formulaire Cerfa n°13406*13 (maison individuelle)<br>
+        • Dépôt en mairie ou en ligne via le <strong>portail GNAU</strong><br>
+        • Délai d'instruction : <strong>2 mois</strong> (maison) / <strong>3 mois</strong> (autres)<br><br>
+        <strong>Déclaration préalable</strong> (travaux entre 5 et 20 m²) :<br>
+        • Cerfa n°13703*03<br>
+        • Délai : <strong>1 mois</strong><br><br>
+        <strong>Pas d'autorisation</strong> si surface < 5 m² et hauteur < 1,80 m<br><br>
+        <strong>Permanence urbanisme :</strong> lundi soir 18h-19h avec M. Beauvallet, ou sur RDV au 02 54 72 04 79.`,
+        source: 'Service urbanisme Lunay / service-public.fr'
+    },
+    {
+        category: 'urbanisme',
+        keywords: ['implantation', 'recul', 'retrait', 'distance', 'limite', 'parcelle', 'alignement', 'voie'],
+        response: `<strong>Règles d'implantation — Lunay</strong><br><br>
+        <strong>Par rapport à la voie publique :</strong><br>
+        • En centre-bourg : construction à l'<strong>alignement</strong> (en continuité du bâti existant)<br>
+        • Hors centre : recul minimum de <strong>5 mètres</strong> par rapport à l'axe de la voie<br><br>
+        <strong>Par rapport aux limites séparatives :</strong><br>
+        • Construction en limite : autorisée si hauteur ≤ 3 m à l'acrotère<br>
+        • Sinon : retrait minimum = <strong>la moitié de la hauteur</strong> du bâtiment (minimum 3 m)<br><br>
+        <strong>Entre deux bâtiments sur une même parcelle :</strong><br>
+        • Distance minimale : <strong>4 mètres</strong>`,
+        source: 'RNU Art. R.111-16 à R.111-20 / Service urbanisme Lunay'
+    },
+    {
+        category: 'urbanisme',
+        keywords: ['abri', 'jardin', 'cabanon', 'garage', 'annexe', 'carport', 'piscine', 'véranda', 'extension'],
+        response: `<strong>Constructions annexes et extensions — Lunay</strong><br><br>
+        <strong>Abri de jardin / garage :</strong><br>
+        • Surface ≤ 5 m² et hauteur ≤ 1,80 m : <strong>aucune formalité</strong><br>
+        • Surface entre 5 et 20 m² : <strong>déclaration préalable</strong><br>
+        • Surface > 20 m² : <strong>permis de construire</strong><br><br>
+        <strong>Piscine :</strong><br>
+        • Bassin ≤ 10 m² : pas de formalité<br>
+        • Bassin entre 10 et 100 m² sans abri ou abri < 1,80 m : <strong>déclaration préalable</strong><br>
+        • Bassin > 100 m² ou abri > 1,80 m : <strong>permis de construire</strong><br><br>
+        <strong>Véranda / extension :</strong><br>
+        • Si surface totale après travaux > 150 m² : recours à un <strong>architecte obligatoire</strong>`,
+        source: 'Code de l\'urbanisme / Service urbanisme Lunay'
+    },
+    {
+        category: 'urbanisme',
+        keywords: ['façade', 'ravalement', 'couleur', 'volet', 'toiture', 'matériau', 'aspect', 'extérieur', 'enduit'],
+        response: `<strong>Aspect extérieur des constructions — Lunay</strong><br><br>
+        <strong>Façades :</strong><br>
+        • Enduits : tons <strong>pierre locale</strong> (beige, ocre, blanc cassé)<br>
+        • Bardage bois : autorisé en complément, teinte naturelle ou gris<br>
+        • <strong>Interdit :</strong> couleurs vives, bardage métallique visible depuis la voie<br><br>
+        <strong>Toitures :</strong><br>
+        • Pente : <strong>40° à 50°</strong> (traditionnelle Val de Loire)<br>
+        • Matériaux : ardoise naturelle ou tuile plate (ton brun/rouge)<br>
+        • Panneaux solaires : autorisés, encastrés dans le plan de toiture<br><br>
+        <strong>Volets :</strong><br>
+        • Bois peint, PVC (teinte bois ou gris), aluminium laqué<br>
+        • Volets roulants : coffre non visible depuis la voie publique<br><br>
+        ⚠️ En périmètre des <strong>Monuments Historiques</strong> (autour de l'église Saint-Martin) : avis de l'<strong>Architecte des Bâtiments de France</strong> obligatoire.`,
+        source: 'RNU Art. R.111-27 / ABF — Service urbanisme Lunay'
+    },
+
+    // === INTERCOMMUNALITÉ ===
+    {
+        category: 'intercommunalite',
+        keywords: ['vendôme', 'vendômois', 'communauté', 'agglomération', 'intercommunalité', 'territoire'],
+        response: `<strong>Communauté d'agglomération Territoires Vendômois</strong><br>
+        Lunay fait partie de la <strong>CA Territoires Vendômois</strong> qui regroupe <strong>65 communes</strong>.<br><br>
+        <strong>Services gérés par l'intercommunalité :</strong><br>
+        • Eau potable et assainissement<br>
+        • Collecte et traitement des déchets (via ValDem)<br>
+        • Transport<br>
+        • Développement économique<br>
+        • Aménagement du territoire<br><br>
+        <strong>Contact :</strong> territoiresvendomois.fr`,
+        source: 'Territoires Vendômois'
+    },
+
+    // === ÉLECTIONS ===
+    {
+        category: 'elections',
+        keywords: ['élection', 'vote', 'scrutin', 'bureau de vote', 'résultat', 'municipales'],
+        response: `<strong>Élections municipales 2026 à Lunay</strong><br>
+        • <strong>Résultat :</strong> Élection de <strong>Colette MOALIC</strong> comme maire<br>
+        • Mme Moalic succède à Michel Chartrain (maire de 2020 à 2026)<br>
+        • <strong>Conseil municipal :</strong> 15 élus<br><br>
+        Pour vérifier votre inscription sur les listes électorales ou connaître votre bureau de vote, contactez la mairie au 02 54 72 04 79.`,
+        source: 'Résultats officiels — lunay.com'
+    },
+
+    // === TRANSPORTS & ACCÈS ===
+    {
+        category: 'transport',
+        keywords: ['transport', 'bus', 'train', 'gare', 'accès', 'route', 'voiture', 'covoiturage'],
+        response: `<strong>Accès à Lunay</strong><br>
+        • <strong>En voiture :</strong> 15 km à l'ouest de Vendôme par la D917<br>
+        • <strong>Gare la plus proche :</strong> Gare de Vendôme (TER Centre-Val de Loire) — 15 km<br>
+        • <strong>Gare TGV :</strong> Vendôme-Villiers-sur-Loir (TGV Paris-Tours) — ~20 km<br><br>
+        <strong>Paris → Lunay :</strong> environ 2h en voiture, ou 42 min TGV jusqu'à Vendôme puis 20 min en voiture.<br><br>
+        Pour le covoiturage, consultez <strong>blablacar.fr</strong> ou le réseau local de Territoires Vendômois.`,
+        source: 'Données géographiques'
+    },
+
+    // === URGENCES ===
+    {
+        category: 'urgence',
+        keywords: ['urgence', 'pompier', 'police', 'gendarmerie', 'samu', 'médecin', 'pharmacie', 'docteur', 'santé'],
+        response: `<strong>Numéros d'urgence</strong><br>
+        • <strong>SAMU :</strong> 15<br>
+        • <strong>Pompiers :</strong> 18<br>
+        • <strong>Gendarmerie :</strong> 17<br>
+        • <strong>Numéro européen :</strong> 112<br><br>
+        <strong>Gendarmerie la plus proche :</strong> Brigade de Montoire-sur-le-Loir<br><br>
+        Pour trouver un médecin ou une pharmacie de garde, appelez le <strong>15</strong> ou consultez <strong>monpharmacien-idf.fr</strong>.`,
+        source: 'Services d\'urgence'
+    }
+];
+
+// ============================================
+// CATEGORY STATS FOR DASHBOARD
+// ============================================
+const categories = [
+    { label: 'Déchets / Collecte', pct: 28 },
+    { label: 'État Civil', pct: 22 },
+    { label: 'Urbanisme / PLU', pct: 18 },
+    { label: 'École / Enfance', pct: 14 },
+    { label: 'Fêtes / Culture', pct: 8 },
+    { label: 'Eau / Assainist.', pct: 6 },
+    { label: 'Transport', pct: 4 }
+];
+
+// ============================================
+// SUGGESTION BUTTONS
+// ============================================
+const suggestionsList = [
+    "Horaires de la mairie ?",
+    "Jour de collecte des poubelles ?",
+    "Inscrire mon enfant à l'école ?",
+    "Qui est le maire ?",
+    "Déchèterie la plus proche ?",
+    "Fête de la tarte aux prunes ?",
+    "Demander un passeport ?",
+    "Visiter l'église Saint-Martin ?",
+    "Construire à Lunay ?",
+    "Service des eaux ?"
+];
+
+// ============================================
+// CHAT ENGINE
+// ============================================
+const chatMessages = document.getElementById('chatMessages');
+let messageCount = 0;
+
+function addMessage(content, type, source) {
+    const div = document.createElement('div');
+    div.className = `msg ${type}`;
+    if (type === 'bot') {
+        div.innerHTML = content + (source ? `<br><span class="source">📄 ${source}</span>` : '');
+    } else {
+        div.textContent = content;
+    }
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    messageCount++;
+}
+
+function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'typing';
+    div.id = 'typingIndicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+}
+
+function findAnswer(query) {
+    const q = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const entry of knowledgeBase) {
+        let score = 0;
+        for (const keyword of entry.keywords) {
+            const kw = keyword.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (q.includes(kw)) {
+                score += kw.length;
+            }
+        }
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = entry;
+        }
+    }
+
+    if (bestMatch && bestScore >= 3) {
+        return { response: bestMatch.response, source: bestMatch.source };
+    }
+
+    return {
+        response: `Je n'ai pas trouvé d'information précise sur votre question. Voici ce que je vous suggère :<br><br>
+        • <strong>Contactez la mairie</strong> au 02 54 72 04 79<br>
+        • <strong>Écrivez par email</strong> à mairie@lunay.com<br>
+        • <strong>Passez en mairie</strong> : 7, Place de l'Église, 41360 Lunay<br><br>
+        <em>Horaires : Lundi 14h-19h, Mar/Jeu/Ven 10h-12h et 14h-16h30</em>`,
+        source: null
+    };
+}
+
+function sendMessage(text) {
+    const input = document.getElementById('userInput');
+    const query = text || input.value.trim();
+    if (!query) return;
+
+    addMessage(query, 'user');
+    input.value = '';
+    showTyping();
+
+    const delay = 600 + Math.random() * 800;
+    setTimeout(() => {
+        removeTyping();
+        const answer = findAnswer(query);
+        addMessage(answer.response, 'bot', answer.source);
+    }, delay);
+}
+
+function handleSuggestion(text) {
+    sendMessage(text);
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+function init() {
+    // Welcome message
+    addMessage(
+        `Bonjour ! 👋 Je suis la <strong>Plateforme d'Intelligence Lunotière</strong>, votre assistant pour la <strong>commune de Lunay</strong>.<br><br>
+        Je connais les horaires de la mairie, les règles d'urbanisme, les services scolaires, la collecte des déchets, le patrimoine, les événements…<br><br>
+        <strong>Comment puis-je vous aider ?</strong>`,
+        'bot',
+        null
+    );
+
+    // Suggestion buttons
+    const sugContainer = document.getElementById('suggestions');
+    suggestionsList.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'suggestion-btn';
+        btn.textContent = s;
+        btn.onclick = () => handleSuggestion(s);
+        sugContainer.appendChild(btn);
+    });
+
+    // Dashboard category bars
+    const barsContainer = document.getElementById('categoryBars');
+    categories.forEach(cat => {
+        const bar = document.createElement('div');
+        bar.className = 'cat-bar';
+        bar.innerHTML = `
+            <span class="label">${cat.label}</span>
+            <div class="bar-bg"><div class="bar-fill" style="width: 0%"></div></div>
+            <span class="pct">${cat.pct}%</span>
+        `;
+        barsContainer.appendChild(bar);
+    });
+
+    // Animate bars
+    setTimeout(() => {
+        document.querySelectorAll('.cat-bar .bar-fill').forEach((fill, i) => {
+            fill.style.width = categories[i].pct + '%';
+        });
+    }, 500);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
